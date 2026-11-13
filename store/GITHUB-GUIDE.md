@@ -47,6 +47,13 @@ git push -u origin main
 - Topics: `chrome-extension`, `firefox-addon`, `content-filter`, `keyword-blocker`, `youtube`, `bengali`, `ocr`
 - Settings → General → Features থেকে Issues চালু রাখুন।
 
+## আপডেটের বিজ্ঞপ্তি কীভাবে কাজ করে
+Extension প্রায় প্রতি ১২ ঘণ্টায় `https://api.github.com/repos/bulbuljessore/Quiet-Feed/releases/latest` দেখে। সেখানকার tag (যেমন `v1.1.0`) Extension-এর `manifest.json`-এর `version`-এর চেয়ে বড় হলে popup-এ ব্যানার আর আইকনে NEW চিহ্ন আসে।
+- Release-এর tag অবশ্যই `v` + সংস্করণ হতে হবে (যেমন manifest-এ `1.1.0` হলে tag `v1.1.0`)।
+- Release-টা **Pre-release** বা **Draft** করবেন না, নইলে `latest` হিসেবে ধরা পড়বে না।
+- রিপো Public থাকতে হবে।
+- ZIP থেকে লোড করা Extension নিজে নিজে আপডেট হতে পারে না; ব্যবহারকারীকে নতুন ZIP নামিয়ে Reload করতে হয়। পুরোপুরি স্বয়ংক্রিয় আপডেট চাইলে স্টোরে দিতে হবে।
+
 ## নতুন সংস্করণ দিতে
 1. `manifest.json` আর `firefox/manifest.json`-এ `version` বাড়ান।
 2. `node build.js`।

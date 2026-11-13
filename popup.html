@@ -8,81 +8,126 @@
 <body>
   <header>
     <h1>Quiet Feed</h1>
-    <label class="switch" title="সব ফিল্টার চালু / বন্ধ">
-      <input type="checkbox" id="enabled">
-      <span class="slider"></span>
-    </label>
+    <div class="header-right">
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" id="lang-bn" aria-pressed="true">বাংলা</button>
+        <button type="button" id="lang-en" aria-pressed="false">EN</button>
+      </div>
+      <label class="switch" data-i18n-title="toggleTitle">
+        <input type="checkbox" id="enabled">
+        <span class="slider"></span>
+      </label>
+    </div>
   </header>
 
+  <div id="update-banner" class="banner" hidden>
+    <div><b id="update-text"></b> <a id="update-link" href="#" target="_blank" rel="noopener" data-i18n="updGet"></a></div>
+    <p class="hint" data-i18n="updHow"></p>
+  </div>
+
   <nav class="tabs" role="tablist">
-    <button role="tab" id="tab-kw" aria-selected="true" aria-controls="panel-kw">কীওয়ার্ড</button>
-    <button role="tab" id="tab-yt" aria-selected="false" aria-controls="panel-yt">YouTube</button>
+    <button role="tab" id="tab-kw" aria-selected="true" aria-controls="panel-kw" data-i18n="tabKw"></button>
+    <button role="tab" id="tab-yt" aria-selected="false" aria-controls="panel-yt" data-i18n="tabYt"></button>
+    <button role="tab" id="tab-adult" aria-selected="false" aria-controls="panel-adult" data-i18n="tabAdult"></button>
+    <button role="tab" id="tab-ads" aria-selected="false" aria-controls="panel-ads" data-i18n="tabAds"></button>
   </nav>
 
   <!-- Keywords -->
   <section id="panel-kw" role="tabpanel">
     <form id="kw-form" class="add-form" autocomplete="off">
-      <input type="text" id="kw-input" placeholder="নাম বা শব্দ লিখুন..." maxlength="100" required>
-      <button type="submit">যোগ করুন</button>
+      <input type="text" id="kw-input" data-i18n-ph="kwPlaceholder" maxlength="100" required>
+      <button type="submit" data-i18n="add"></button>
     </form>
     <ul id="kw-list"></ul>
-    <p id="kw-empty" class="empty" hidden>কোনো কীওয়ার্ড নেই।</p>
-    <p class="hint">পোস্ট, কমেন্ট, লেখা আর ছবির ভেতরের লেখায় এগুলো মিললে লুকানো হয়।</p>
+    <p id="kw-empty" class="empty" data-i18n="kwEmpty" hidden></p>
+    <p class="hint" data-i18n="kwHint"></p>
 
-    <h2>ছবি ঝাপসা (Blur)</h2>
-    <label class="check"><input type="checkbox" id="blurAll"> সব সাইটে সব ছবি ও ভিডিও ঝাপসা রাখো</label>
-    <button type="button" id="blur-site" class="wide" disabled>এই সাইটে ঝাপসা করো</button>
+    <h2 data-i18n="blurTitle"></h2>
+    <label class="check"><input type="checkbox" id="blurAll"> <span data-i18n="blurAll"></span></label>
+    <button type="button" id="blur-site" class="wide" disabled></button>
     <ul id="blur-list"></ul>
-    <p class="hint">ঝাপসা ছবিতে ক্লিক করলে সেটা দেখা যাবে।</p>
+    <p class="hint" data-i18n="blurHint"></p>
   </section>
 
   <!-- YouTube -->
   <section id="panel-yt" role="tabpanel" hidden>
     <fieldset class="modes">
-      <legend>YouTube মোড</legend>
-      <label><input type="radio" name="mode" value="off"> বন্ধ</label>
-      <label><input type="radio" name="mode" value="block"> এই চ্যানেলগুলো ব্লক করো</label>
-      <label><input type="radio" name="mode" value="only"> শুধু এই চ্যানেলগুলো দেখাও</label>
+      <legend data-i18n="ytMode"></legend>
+      <label><input type="radio" name="mode" value="off"> <span data-i18n="modeOff"></span></label>
+      <label><input type="radio" name="mode" value="block"> <span data-i18n="modeBlock"></span></label>
+      <label><input type="radio" name="mode" value="only"> <span data-i18n="modeOnly"></span></label>
     </fieldset>
 
     <div id="yt-block-box">
-      <h2>ব্লক করা চ্যানেল</h2>
+      <h2 data-i18n="blockedTitle"></h2>
       <form id="blocked-form" class="add-form" autocomplete="off">
-        <input type="text" id="blocked-input" placeholder="@handle, চ্যানেলের নাম বা লিংক" maxlength="200" required>
-        <button type="submit">ব্লক</button>
+        <input type="text" id="blocked-input" data-i18n-ph="chPlaceholder" maxlength="200" required>
+        <button type="submit" data-i18n="block"></button>
       </form>
       <ul id="blocked-list"></ul>
-      <p id="blocked-empty" class="empty" hidden>কোনো চ্যানেল ব্লক করা নেই।</p>
+      <p id="blocked-empty" class="empty" data-i18n="blockedEmpty" hidden></p>
       <label class="check"><input type="checkbox" id="relatedByName">
-        যেসব ভিডিওর শিরোনামে ব্লক করা চ্যানেলের নাম আছে, সেগুলোও লুকাও</label>
+        <span data-i18n="relatedByName"></span></label>
     </div>
 
     <div id="yt-only-box">
-      <h2>অনুমোদিত চ্যানেল</h2>
+      <h2 data-i18n="allowedTitle"></h2>
       <form id="allowed-form" class="add-form" autocomplete="off">
-        <input type="text" id="allowed-input" placeholder="@handle, চ্যানেলের নাম বা লিংক" maxlength="200" required>
-        <button type="submit">যোগ</button>
+        <input type="text" id="allowed-input" data-i18n-ph="chPlaceholder" maxlength="200" required>
+        <button type="submit" data-i18n="addShort"></button>
       </form>
       <ul id="allowed-list"></ul>
-      <p id="allowed-empty" class="empty warn" hidden>তালিকা খালি, তাই এখনো কিছু লুকানো হচ্ছে না।</p>
+      <p id="allowed-empty" class="empty warn" data-i18n="allowedEmpty" hidden></p>
       <label class="check"><input type="checkbox" id="showRelatedInOnly">
-        ভিডিও দেখার পেজে "Related" ভিডিও দেখাও</label>
+        <span data-i18n="showRelated"></span></label>
     </div>
 
     <div class="current">
-      <span id="current-label">বর্তমান YouTube পেজের চ্যানেল:</span>
+      <span id="current-label"></span>
       <div class="current-actions">
-        <button type="button" id="cur-block" disabled>ব্লকে যোগ</button>
-        <button type="button" id="cur-allow" disabled>অনুমোদিতে যোগ</button>
+        <button type="button" id="cur-block" data-i18n="curBlock" disabled></button>
+        <button type="button" id="cur-allow" data-i18n="curAllow" disabled></button>
       </div>
     </div>
   </section>
 
+  <!-- Adult content -->
+  <section id="panel-adult" role="tabpanel" hidden>
+    <h2 data-i18n="adultTitle"></h2>
+    <label class="check"><input type="checkbox" id="adultOn"> <span data-i18n="adultOn"></span></label>
+    <div id="adult-options">
+      <label class="check"><input type="checkbox" id="adultSites"> <span data-i18n="adultSites"></span></label>
+      <label class="check"><input type="checkbox" id="adultSafe"> <span data-i18n="adultSafe"></span></label>
+      <label class="check"><input type="checkbox" id="adultReveal"> <span data-i18n="adultReveal"></span></label>
+    </div>
+    <p class="hint" data-i18n="adultHint"></p>
+    <p class="hint" data-i18n="adultLimit"></p>
+  </section>
+
+  <!-- Ads -->
+  <section id="panel-ads" role="tabpanel" hidden>
+    <h2 data-i18n="adsTitle"></h2>
+    <label class="check"><input type="checkbox" id="adsOn"> <span data-i18n="adsOn"></span></label>
+    <div id="ads-options">
+      <label class="check"><input type="checkbox" id="adsNetwork"> <span data-i18n="adsNetwork"></span></label>
+      <label class="check"><input type="checkbox" id="adsCosmetic"> <span data-i18n="adsCosmetic"></span></label>
+      <label class="check"><input type="checkbox" id="adsSocial"> <span data-i18n="adsSocial"></span></label>
+      <button type="button" id="ads-site" class="wide" disabled></button>
+      <h2 data-i18n="adsAllowList"></h2>
+      <ul id="ads-list"></ul>
+    </div>
+    <p class="hint" data-i18n="adsHint"></p>
+    <p class="hint" data-i18n="adsLimit"></p>
+  </section>
+
   <footer>
+    <label class="check small"><input type="checkbox" id="updateCheck"> <span data-i18n="updCheck"></span></label>
     <span id="count"></span>
-    <span class="hint">পরিবর্তন সাথে সাথে সব ট্যাবে কাজ করে।</span>
+    <span class="hint" data-i18n="footHint"></span>
+    <span class="hint" id="ver"></span>
   </footer>
 
+  <script src="i18n.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

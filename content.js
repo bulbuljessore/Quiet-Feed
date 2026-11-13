@@ -37,11 +37,20 @@
   let enabled = true;
   let regex = null;
   let regexLoose = null;
+  let regexAdult = null;       // built-in adult words (only when the adult filter is on)
+  let regexAdultLoose = null;
+  let allowReveal = true;      // show a "Show" button on adult-hidden items
+  let lang = 'bn';
   let hiddenCount = 0;
+  const SHOWN_ATTR = 'data-srk-shown';
+  const PH_ATTR = 'data-srk-ph';
 
   // ---------- style ----------
   const style = document.createElement('style');
-  style.textContent = `[${HIDDEN_ATTR}] { display: none !important; }`;
+  style.textContent = `[${HIDDEN_ATTR}] { display: none !important; }
+    [${PH_ATTR}] { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0; padding: 8px 12px;
+      border: 1px dashed #999; border-radius: 8px; background: rgba(128,128,128,.12); color: inherit; font: 13px/1.4 system-ui, sans-serif; }
+    [${PH_ATTR}] button { padding: 4px 12px; border: 0; border-radius: 6px; background: #c62828; color: #fff; font: inherit; cursor: pointer; }`;
   (document.head || document.documentElement).appendChild(style);
 
   // ---------- matching ----------
@@ -70,8 +79,13 @@
     return parts.length ? new RegExp(parts.join('|'), 'iu') : null;
   }
 
-  function matches(text) {
-    return !!regex && !!text && regex.test(text.normalize('NFC'));
+  // 'user' = the user's own keywords (always hidden), 'adult' = built-in adult list (can be revealed)
+  function kindOf(text) {
+    if (!text) return null;
+    const t = text.normalize('NFC');
+    if (regex && regex.test(t)) return 'user';
+    if (regexAdult && regexAdult.test(t)) return 'adult';
+    return null;
   }
 
   // ---------- hiding ----------
@@ -84,35 +98,60 @@
     return target;
   }
 
-  function hide(el) {
-    if (!el || el.hasAttribute(HIDDEN_ATTR)) return;
+  function addPlaceholder(el) {
+    const ph = document.createElement('div');
+    ph.setAttribute(PH_ATTR, '1');
+    const msg = document.createElement('span');
+    msg.textContent = lang === 'en' ? 'Adult content hidden' : 'প্রাপ্তবয়স্ক কনটেন্ট লুকানো হয়েছে';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = lang === 'en' ? 'Show' : 'দেখুন';
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      el.removeAttribute(HIDDEN_ATTR);
+      el.setAttribute(SHOWN_ATTR, '1');
+      ph.remove();
+      hiddenCount = Math.max(0, hiddenCount - 1);
+      reportCount();
+    });
+    ph.append(msg, btn);
+    if (el.parentNode) el.parentNode.insertBefore(ph, el);
+  }
+
+  function hide(el, kind) {
+    if (!el || el.hasAttribute(HIDDEN_ATTR) || el.hasAttribute(SHOWN_ATTR)) return;
     el.setAttribute(HIDDEN_ATTR, '1');
+    if (kind === 'adult' && allowReveal) addPlaceholder(el);
     hiddenCount++;
     reportCount();
   }
 
   function scan(root) {
-    if (!enabled || !regex || !root) return;
+    if (!enabled || (!regex && !regexAdult) || !root) return;
 
     if (root.nodeType === Node.TEXT_NODE) {
-      if (matches(root.nodeValue)) hide(pickContainer(root));
+      if (root.parentElement && root.parentElement.closest(`[${PH_ATTR}]`)) return;
+      const k = kindOf(root.nodeValue);
+      if (k) hide(pickContainer(root), k);
       return;
     }
     if (root.nodeType !== Node.ELEMENT_NODE || SKIP_TAGS.has(root.tagName)) return;
-    if (root.closest && root.closest(`[${HIDDEN_ATTR}]`)) return;
+    if (root.closest && (root.closest(`[${HIDDEN_ATTR}]`) || root.closest(`[${PH_ATTR}]`))) return;
 
     scanImages(root);
 
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
       acceptNode(n) {
         const p = n.parentElement;
-        if (!p || SKIP_TAGS.has(p.tagName) || p.isContentEditable) return NodeFilter.FILTER_REJECT;
+        if (!p || SKIP_TAGS.has(p.tagName) || p.isContentEditable || p.closest(`[${PH_ATTR}]`)) return NodeFilter.FILTER_REJECT;
         return n.nodeValue && n.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
       }
     });
     let n;
     while ((n = walker.nextNode())) {
-      if (matches(n.nodeValue)) hide(pickContainer(n));
+      const k = kindOf(n.nodeValue);
+      if (k) hide(pickContainer(n), k);
     }
 
     // image alt text, titles, aria labels
@@ -120,7 +159,8 @@
     for (const el of attrNodes) {
       if (SKIP_TAGS.has(el.tagName)) continue;
       const v = el.getAttribute('alt') || el.getAttribute('title') || el.getAttribute('aria-label');
-      if (matches(v)) hide(pickContainer(el));
+      const k = kindOf(v);
+      if (k) hide(pickContainer(el), k);
     }
   }
 
@@ -129,7 +169,7 @@
   const MIN_H = 40;
   const MAX_OCR_PER_PAGE = 80;
   let ocrSeen = new WeakSet();
-  const ocrResults = new Map(); // src -> true/false (blocked?)
+  const ocrResults = new Map(); // src -> 'user' | 'adult' | null
   const ocrActive = new Set(); // img elements hidden by OCR
   let ocrRequested = 0;
 
@@ -138,8 +178,12 @@
   }
 
   // OCR often inserts stray spaces, so compare with all whitespace removed.
-  function matchesLoose(text) {
-    return !!regexLoose && !!text && regexLoose.test(compact(text));
+  function kindOfLoose(text) {
+    if (!text) return null;
+    const c = compact(text);
+    if (regexLoose && regexLoose.test(c)) return 'user';
+    if (regexAdultLoose && regexAdultLoose.test(c)) return 'adult';
+    return null;
   }
 
   function imageSrc(img) {
@@ -148,7 +192,7 @@
   }
 
   function checkImage(img) {
-    if (!enabled || !regexLoose || ocrSeen.has(img)) return;
+    if (!enabled || (!regexLoose && !regexAdultLoose) || ocrSeen.has(img)) return;
     if (!img.complete) {
       img.addEventListener('load', () => checkImage(img), { once: true });
       return;
@@ -159,7 +203,8 @@
     ocrSeen.add(img);
 
     if (ocrResults.has(src)) {
-      if (ocrResults.get(src)) { hide(pickContainer(img)); ocrActive.add(img); }
+      const k = ocrResults.get(src);
+      if (k) { hide(pickContainer(img), k); ocrActive.add(img); }
       return;
     }
     if (ocrRequested >= MAX_OCR_PER_PAGE) return;
@@ -168,10 +213,10 @@
     try {
       chrome.runtime.sendMessage({ type: 'ocr', url: src }, (res) => {
         if (chrome.runtime.lastError || !res) return;
-        const hit = matchesLoose(res.text);
+        const hit = kindOfLoose(res.text);
         ocrResults.set(src, hit);
         if (hit && img.isConnected && enabled) {
-          hide(pickContainer(img));
+          hide(pickContainer(img), hit);
           ocrActive.add(img);
         }
       });
@@ -179,7 +224,7 @@
   }
 
   function scanImages(root) {
-    if (!regexLoose || !root) return;
+    if ((!regexLoose && !regexAdultLoose) || !root) return;
     if (root.nodeType === Node.ELEMENT_NODE) {
       if (root.tagName === 'IMG') checkImage(root);
       else if (root.querySelectorAll) root.querySelectorAll('img').forEach(checkImage);
@@ -188,6 +233,8 @@
 
   function unhideAll() {
     document.querySelectorAll(`[${HIDDEN_ATTR}]`).forEach((el) => el.removeAttribute(HIDDEN_ATTR));
+    document.querySelectorAll(`[${SHOWN_ATTR}]`).forEach((el) => el.removeAttribute(SHOWN_ATTR));
+    document.querySelectorAll(`[${PH_ATTR}]`).forEach((el) => el.remove());
     hiddenCount = 0;
     ocrSeen = new WeakSet();
     reportCount();
@@ -223,7 +270,7 @@
   }
 
   const observer = new MutationObserver((mutations) => {
-    if (!enabled || !regex) return;
+    if (!enabled || (!regex && !regexAdult)) return;
     for (const m of mutations) {
       if (m.type === 'childList') {
         m.addedNodes.forEach((n) => pending.add(n));
@@ -242,18 +289,31 @@
   }
 
   // ---------- settings ----------
+  const READ_DEFAULTS = { enabled: true, keywords: DEFAULT_KEYWORDS, adult: null, lang: 'bn' };
+
   function applySettings(s) {
     enabled = s.enabled !== false;
-    const list = Array.isArray(s.keywords) ? s.keywords : DEFAULT_KEYWORDS;
-    regex = buildRegex(list);
-    regexLoose = buildLooseRegex(list);
-    ocrResults.clear(); // keywords changed: re-evaluate images
+    lang = s.lang === 'en' ? 'en' : 'bn';
+    const user = Array.isArray(s.keywords) ? s.keywords : DEFAULT_KEYWORDS;
+    const a = s.adult || {};
+    const adultOn = a.on === true;
+    allowReveal = a.allowReveal !== false;
+
+    // The user's own keywords and the built-in adult list are kept apart, so turning the
+    // adult filter on or off never changes the user's keyword filter (and vice versa).
+    regex = buildRegex(user);
+    regexLoose = buildLooseRegex(user);
+    regexAdult = adultOn ? buildRegex(ADULT_TERMS) : null;
+    // OCR text is compared without spaces, so only longer adult terms are used there (avoids "Essex"-style hits)
+    regexAdultLoose = adultOn ? buildLooseRegex(ADULT_TERMS.filter((k) => k.replace(/s+/g, '').length >= 5)) : null;
+
+    ocrResults.clear(); // settings changed: re-evaluate images
     ocrRequested = 0;
-    if (enabled && regex) rescanAll();
+    if (enabled && (regex || regexAdult)) rescanAll();
     else unhideAll();
   }
 
-  chrome.storage.sync.get({ enabled: true, keywords: null }, (s) => {
+  chrome.storage.sync.get({ ...READ_DEFAULTS, keywords: null }, (s) => {
     if (s.keywords === null) {
       // first run: seed defaults
       chrome.storage.sync.set({ keywords: DEFAULT_KEYWORDS, enabled: true });
@@ -265,6 +325,6 @@
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'sync') return;
-    chrome.storage.sync.get({ enabled: true, keywords: DEFAULT_KEYWORDS }, applySettings);
+    chrome.storage.sync.get(READ_DEFAULTS, applySettings);
   });
 })();

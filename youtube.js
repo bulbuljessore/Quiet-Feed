@@ -29,6 +29,13 @@
   let allowedKeys = [];
   let bypassHref = null;
   let pageIsBlocked = false;
+  let lang = 'bn';
+  // adult filter (separate from the channel lists; needs adult-terms.js)
+  let adultOn = false;
+  let allowReveal = true;
+  let adultRegex = null;
+  const SHOWN = 'data-srk-yt-shown';
+  const placeholders = new WeakMap(); // card -> placeholder element
 
   // ---------- helpers ----------
   function norm(s) {
@@ -42,6 +49,16 @@
     blockedKeys = (cfg.blocked || []).map(norm).filter(Boolean);
     allowedKeys = (cfg.allowed || []).map(norm).filter(Boolean);
   }
+
+  function buildAdultRegex() {
+    const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = ADULT_TERMS.map((k) => k.normalize('NFC').trim()).filter(Boolean).map((k) => {
+      const body = k.split(/\s+/).map(esc).join('\\s*');
+      return /^[\x00-\x7F]+$/.test(k) ? '(?<![A-Za-z])' + body + '(?![A-Za-z])' : body;
+    });
+    adultRegex = parts.length ? new RegExp(parts.join('|'), 'iu') : null;
+  }
+  const isAdultText = (t) => !!(adultOn && adultRegex && t && adultRegex.test(t.normalize('NFC')));
 
   function channelFromAnchor(a) {
     if (!/(^|\.)youtube\.com$/.test(a.hostname)) return null;
@@ -105,18 +122,57 @@
     else if (el.hasAttribute(ATTR)) el.removeAttribute(ATTR);
   }
 
+  // 'user' = hidden by the channel lists, 'adult' = hidden by the adult filter, null = visible
+  function cardVerdict(card) {
+    if (shouldHideCard(card)) return 'user';
+    if (adultOn) {
+      const info = channelOf(card);
+      if (isAdultText((info.name || '') + ' ' + titleOf(card))) return 'adult';
+    }
+    return null;
+  }
+
+  function setPlaceholder(card, need) {
+    const existing = placeholders.get(card);
+    if (!need) {
+      if (existing) { existing.remove(); placeholders.delete(card); }
+      return;
+    }
+    if (existing && existing.isConnected) return;
+    const ph = document.createElement('div');
+    ph.setAttribute('data-srk-yt-ph', '1');
+    const msg = document.createElement('span');
+    msg.textContent = lang === 'en' ? 'Adult content hidden' : 'প্রাপ্তবয়স্ক কনটেন্ট লুকানো হয়েছে';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = lang === 'en' ? 'Show' : 'দেখুন';
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      card.setAttribute(SHOWN, '1');
+      run();
+    });
+    ph.append(msg, btn);
+    if (card.parentNode) card.parentNode.insertBefore(ph, card);
+    placeholders.set(card, ph);
+  }
+
   function filterCards() {
     document.querySelectorAll(CARD).forEach((card) => {
       // evaluate only the outermost card (rich-item wraps lockup etc.)
       if (card.parentElement && card.parentElement.closest(CARD)) return;
-      setHidden(card, shouldHideCard(card));
+      let v = cardVerdict(card);
+      if (v === 'adult' && card.hasAttribute(SHOWN)) v = null; // the user chose to see it
+      setHidden(card, !!v);
+      setPlaceholder(card, v === 'adult' && allowReveal);
     });
 
     // hide shelves whose cards are all hidden
     document.querySelectorAll(SHELF).forEach((shelf) => {
       const cards = shelf.querySelectorAll(CARD);
       if (!cards.length) return;
-      const allHidden = Array.from(cards).every((c) => c.hasAttribute(ATTR) || c.closest(`[${ATTR}]`));
+      const allHidden = Array.from(cards).every((c) =>
+        (c.hasAttribute(ATTR) || c.closest(`[${ATTR}]`)) && !placeholders.has(c));
       setHidden(shelf, allHidden);
     });
   }
@@ -159,11 +215,13 @@
     return hasChannel(info) ? info : null;
   }
 
-  function pageShouldBeBlocked(info) {
-    if (!info) return false;
-    if (cfg.mode === 'block') return blockedKeys.length > 0 && keyMatches(info, blockedKeys);
-    if (cfg.mode === 'only') return allowedKeys.length > 0 && !keyMatches(info, allowedKeys);
-    return false;
+  // returns 'user' (channel lists), 'adult' (adult filter) or null
+  function pageBlockReason(info) {
+    if (!info) return null;
+    if (cfg.mode === 'block' && blockedKeys.length > 0 && keyMatches(info, blockedKeys)) return 'user';
+    if (cfg.mode === 'only' && allowedKeys.length > 0 && !keyMatches(info, allowedKeys)) return 'user';
+    if (adultOn && isAdultText(info.name)) return 'adult';
+    return null;
   }
 
   function removeOverlay() {
@@ -171,33 +229,38 @@
     if (o) o.remove();
   }
 
-  function showOverlay() {
+  function showOverlay(reason) {
     if (document.getElementById('srk-yt-overlay')) return;
     const o = document.createElement('div');
     o.id = 'srk-yt-overlay';
     const box = document.createElement('div');
     const msg = document.createElement('p');
-    msg.textContent = cfg.mode === 'only'
-      ? 'এই চ্যানেল আপনার অনুমোদিত তালিকায় নেই।'
-      : 'এই চ্যানেল আপনি ব্লক করেছেন।';
+    const en = lang === 'en';
+    msg.textContent = reason === 'adult'
+      ? (en ? 'This channel looks like adult content, so it was blocked.' : 'এই চ্যানেলটি প্রাপ্তবয়স্ক কনটেন্টের মনে হচ্ছে, তাই ব্লক করা হয়েছে।')
+      : cfg.mode === 'only'
+        ? (en ? 'This channel is not on your allowed list.' : 'এই চ্যানেল আপনার অনুমোদিত তালিকায় নেই।')
+        : (en ? 'You blocked this channel.' : 'এই চ্যানেল আপনি ব্লক করেছেন।');
     const back = document.createElement('button');
-    back.textContent = '← ফিরে যান';
+    back.textContent = en ? '← Go back' : '← ফিরে যান';
     back.addEventListener('click', () => history.back());
     const once = document.createElement('button');
     once.className = 'srk-secondary';
-    once.textContent = 'এবারের জন্য দেখুন';
+    once.textContent = en ? 'Show this once' : 'এবারের জন্য দেখুন';
     once.addEventListener('click', () => { bypassHref = location.href; run(); });
-    box.append(msg, back, once);
+    box.append(msg, back);
+    if (reason !== 'adult' || allowReveal) box.append(once); // adult overlay: reveal only if the user allows it
     o.appendChild(box);
     document.documentElement.appendChild(o);
   }
 
   function handlePage() {
-    const blocked = bypassHref !== location.href && pageShouldBeBlocked(pageChannel());
+    const reason = bypassHref !== location.href ? pageBlockReason(pageChannel()) : null;
+    const blocked = !!reason;
     pageIsBlocked = blocked;
     if (blocked) {
       document.querySelectorAll('video').forEach((v) => { try { v.pause(); } catch (_) { /* noop */ } });
-      showOverlay();
+      showOverlay(reason);
     } else {
       removeOverlay();
     }
@@ -213,12 +276,14 @@
   // ---------- main loop ----------
   function clearAll() {
     document.querySelectorAll(`[${ATTR}]`).forEach((el) => el.removeAttribute(ATTR));
+    document.querySelectorAll(`[${SHOWN}]`).forEach((el) => el.removeAttribute(SHOWN));
+    document.querySelectorAll('[data-srk-yt-ph]').forEach((el) => el.remove());
     pageIsBlocked = false;
     removeOverlay();
   }
 
   function run() {
-    if (cfg.mode === 'off') { clearAll(); return; }
+    if (cfg.mode === 'off' && !adultOn) { clearAll(); return; }
     filterCards();
     filterComments();
     handlePage();
@@ -233,6 +298,9 @@
   const style = document.createElement('style');
   style.textContent = `
     [${ATTR}] { display: none !important; }
+    [data-srk-yt-ph] { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0; padding: 8px 12px;
+      border: 1px dashed #999; border-radius: 8px; background: rgba(128,128,128,.12); color: inherit; font: 13px/1.4 system-ui, sans-serif; }
+    [data-srk-yt-ph] button { padding: 4px 12px; border: 0; border-radius: 6px; background: #c62828; color: #fff; font: inherit; cursor: pointer; }
     #srk-yt-overlay {
       position: fixed; inset: 0; z-index: 2147483647;
       display: flex; align-items: center; justify-content: center;
@@ -254,6 +322,13 @@
   document.addEventListener('yt-page-data-updated', schedule);
 
   // ---------- settings & popup messages ----------
+  function applyAdult(a) {
+    a = a || {};
+    adultOn = a.on === true;
+    allowReveal = a.allowReveal !== false;
+    if (adultOn && !adultRegex) buildAdultRegex();
+  }
+
   function applyCfg(yt) {
     cfg = { ...DEFAULT_YT, ...(yt || {}) };
     bypassHref = null;
@@ -262,9 +337,20 @@
     run();
   }
 
-  chrome.storage.sync.get({ yt: null }, (s) => applyCfg(s.yt));
+  chrome.storage.sync.get({ yt: null, lang: 'bn', adult: null }, (s) => {
+    lang = s.lang;
+    applyAdult(s.adult);
+    applyCfg(s.yt);
+  });
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'sync' && changes.yt) applyCfg(changes.yt.newValue);
+    if (area !== 'sync') return;
+    if (changes.lang) { lang = changes.lang.newValue; removeOverlay(); run(); }
+    if (changes.adult) {
+      applyAdult(changes.adult.newValue);
+      clearAll();
+      run();
+    }
+    if (changes.yt) applyCfg(changes.yt.newValue);
   });
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {

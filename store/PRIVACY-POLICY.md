@@ -14,7 +14,13 @@ This data is saved with the browser's extension storage on your device. If you u
 To do its job, the extension reads the text of the pages you visit, YouTube page elements (channel names, titles, comments) and images on those pages. This happens locally in your browser to decide what to hide. Nothing is uploaded or sent to any server, including image content and recognized text.
 
 ## Network and third parties
-The extension has no servers, no analytics, no advertising and no third-party code that contacts the internet. The text-recognition engine and its language data are bundled inside the extension and run on your device.
+The extension has no servers, no analytics, no advertising and no third-party code that contacts the internet.
+
+The only network request the extension makes on its own is an optional update check: about every 12 hours it asks the public GitHub API (api.github.com) for the latest release of this project. The request contains no personal data and no browsing information; GitHub sees only the IP address, as for any web request, under GitHub's own privacy policy. You can turn the check off in the popup.
+
+The optional ad blocker uses a list of ad and tracking domains that is bundled in the extension. Requests to those domains are blocked locally by your browser; nothing is reported anywhere.
+
+When the optional adult-content filter is on, the extension adds a SafeSearch parameter to the address of Google, Bing and DuckDuckGo search pages. This is done locally in your browser. The text-recognition engine and its language data are bundled inside the extension and run on your device.
 
 ## Permissions
 - Storage: save your lists and settings.
