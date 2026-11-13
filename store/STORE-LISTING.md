@@ -3,7 +3,7 @@
 ## নাম
 Quiet Feed – Keyword & Channel Filter
 
-> নাম বদলাতে চাইলে `manifest.json` আর `firefox/manifest.json`-এর `"name"` পাল্টে `node build.js` চালান।
+> নাম বদলাতে চাইলে `manifest.json` আর `build-firefox/manifest.json`-এর `"name"` পাল্টে `node build.js` চালান।
 > Submit-এর আগে প্রতিটা স্টোরে নামটা আগে থেকে নেওয়া আছে কিনা সার্চ করে দেখে নিন।
 
 ## সংক্ষিপ্ত বিবরণ (Chrome: সর্বোচ্চ ১৩২ অক্ষর)

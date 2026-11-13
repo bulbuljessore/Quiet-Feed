@@ -31,14 +31,14 @@ git push -u origin main
 ## Release বানানো (ডাউনলোডের জন্য ZIP)
 1. রিপোর ডান পাশে **Releases → Create a new release**।
 2. Tag: `v1.0.0`, Title: `Quiet Feed 1.0.0`।
-3. **Attach binaries** এ `dist/quiet-feed-chromium-1.0.0.zip` আর `dist/quiet-feed-firefox-1.0.0.zip` দুটোই দিন।
+3. **Attach binaries** এ `dist/quiet-feed-chromium.zip` আর `dist/quiet-feed-firefox.zip` দুটোই দিন। **নাম বদলাবেন না**: README-র ডাউনলোড বাটন `releases/latest/download/` লিংকে ঠিক এই নামের ফাইল খোঁজে।
 4. বিবরণে নিচের লেখাটা দিন, তারপর **Publish release**।
 
 ```
 প্রথম প্রকাশ।
 - কীওয়ার্ড ফিল্টার, ছবির ভেতরের লেখা (OCR), YouTube চ্যানেল ব্লক ও শুধু-দেখাও মোড, ঝাপসা মোড।
-- Chrome, Edge, Brave, Opera, Vivaldi, Arc: quiet-feed-chromium zip Extract করে "Load unpacked" দিন।
-- Firefox: quiet-feed-firefox zip, about:debugging থেকে অস্থায়ীভাবে লোড হয়।
+- Chrome, Edge, Brave, Opera, Vivaldi, Arc: quiet-feed-chromium.zip Extract করে "Load unpacked" দিন।
+- Firefox: quiet-feed-firefox.zip, about:debugging থেকে অস্থায়ীভাবে লোড হয়।
 ইনস্টলের ধাপ README-তে আছে।
 ```
 
@@ -55,7 +55,7 @@ Extension প্রায় প্রতি ১২ ঘণ্টায় `https
 - ZIP থেকে লোড করা Extension নিজে নিজে আপডেট হতে পারে না; ব্যবহারকারীকে নতুন ZIP নামিয়ে Reload করতে হয়। পুরোপুরি স্বয়ংক্রিয় আপডেট চাইলে স্টোরে দিতে হবে।
 
 ## নতুন সংস্করণ দিতে
-1. `manifest.json` আর `firefox/manifest.json`-এ `version` বাড়ান।
+1. `manifest.json` আর `build-firefox/manifest.json`-এ `version` বাড়ান।
 2. `node build.js`।
 3. কোড পুশ করুন, নতুন tag দিয়ে নতুন Release বানিয়ে নতুন ZIP দিন।
 

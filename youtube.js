@@ -7,8 +7,10 @@
   const ATTR = 'data-srk-yt-hidden';
   const DEFAULT_YT = {
     mode: 'block',            // 'off' | 'block' | 'only'
-    blocked: [],
+    blocked: [],              // channels (handle, id or name)
     allowed: [],
+    blockedWords: [],         // words matched in a video's title or channel name (e.g. football, cartoon)
+    allowedWords: [],         // only mode: a video is kept when its title/channel name has one of these (e.g. education)
     relatedByName: true,      // block mode: also hide videos whose title mentions a blocked channel
     showRelatedInOnly: false  // only mode: keep the "related videos" sidebar on watch pages
   };
@@ -45,9 +47,25 @@
     return t.normalize('NFC').trim().replace(/^@/, '').toLowerCase();
   }
 
+  let blockedRe = null;
+  let allowedRe = null;
+
+  // Latin words match from the start of a word ("kid" matches "kids" but not "skid");
+  // Bengali and other scripts match anywhere in the text.
+  function buildWordRegex(words) {
+    const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = (words || []).map((k) => String(k).normalize('NFC').trim()).filter(Boolean).map((k) => {
+      const body = k.split(/\s+/).map(esc).join('\\s+');
+      return /^[\x00-\x7F]+$/.test(k) ? '(?<![A-Za-z0-9])' + body : body;
+    });
+    return parts.length ? new RegExp(parts.join('|'), 'iu') : null;
+  }
+
   function buildKeys() {
     blockedKeys = (cfg.blocked || []).map(norm).filter(Boolean);
     allowedKeys = (cfg.allowed || []).map(norm).filter(Boolean);
+    blockedRe = buildWordRegex(cfg.blockedWords);
+    allowedRe = buildWordRegex(cfg.allowedWords);
   }
 
   function buildAdultRegex() {
@@ -99,22 +117,28 @@
 
   // ---------- cards & comments ----------
   function shouldHideCard(card) {
+    if (cfg.mode !== 'block' && cfg.mode !== 'only') return false;
     const info = channelOf(card);
+    const text = ((info.name || '') + ' ' + titleOf(card)).normalize('NFC');
+
+    // blocked channels and blocked words apply in both modes (blocked always wins)
+    if (blockedKeys.length && keyMatches(info, blockedKeys)) return true;
+    if (blockedRe && blockedRe.test(text)) return true;
+
     if (cfg.mode === 'block') {
-      if (!blockedKeys.length) return false;
-      if (keyMatches(info, blockedKeys)) return true;
-      if (cfg.relatedByName) {
+      if (cfg.relatedByName && blockedKeys.length) {
         const t = titleOf(card);
         if (t && blockedKeys.some((k) => k.length >= 3 && t.includes(k))) return true;
       }
       return false;
     }
-    if (cfg.mode === 'only') {
-      if (!allowedKeys.length) return false; // empty allow-list: don't blank the whole site
-      if (cfg.showRelatedInOnly && card.closest(RELATED_AREA)) return false;
-      return !(hasChannel(info) && keyMatches(info, allowedKeys));
-    }
-    return false;
+
+    // only mode: keep a video when its channel is allowed, or its title/channel name has an allowed word
+    if (!allowedKeys.length && !allowedRe) return false; // empty allow-list: don't blank the whole site
+    if (cfg.showRelatedInOnly && card.closest(RELATED_AREA)) return false;
+    if (hasChannel(info) && keyMatches(info, allowedKeys)) return false;
+    if (allowedRe && allowedRe.test(text)) return false;
+    return true;
   }
 
   function setHidden(el, hide) {
@@ -216,10 +240,25 @@
   }
 
   // returns 'user' (channel lists), 'adult' (adult filter) or null
+  // channel name plus, on a watch page, the video title (document.title is "(n) Title - YouTube")
+  function currentPageText(info) {
+    let t = info.name || '';
+    if (location.pathname === '/watch') {
+      t += ' ' + document.title.replace(/^\(\d+\)\s*/, '').replace(/\s*-\s*YouTube$/, '');
+    }
+    return t.normalize('NFC');
+  }
+
   function pageBlockReason(info) {
     if (!info) return null;
-    if (cfg.mode === 'block' && blockedKeys.length > 0 && keyMatches(info, blockedKeys)) return 'user';
-    if (cfg.mode === 'only' && allowedKeys.length > 0 && !keyMatches(info, allowedKeys)) return 'user';
+    if (cfg.mode === 'block' || cfg.mode === 'only') {
+      if (blockedKeys.length && keyMatches(info, blockedKeys)) return 'user';
+      if (blockedRe && blockedRe.test(currentPageText(info))) return 'user';
+    }
+    if (cfg.mode === 'only' && (allowedKeys.length || allowedRe)) {
+      const ok = keyMatches(info, allowedKeys) || (allowedRe && allowedRe.test(currentPageText(info)));
+      if (!ok) return 'user';
+    }
     if (adultOn && isAdultText(info.name)) return 'adult';
     return null;
   }
@@ -239,8 +278,8 @@
     msg.textContent = reason === 'adult'
       ? (en ? 'This channel looks like adult content, so it was blocked.' : 'এই চ্যানেলটি প্রাপ্তবয়স্ক কনটেন্টের মনে হচ্ছে, তাই ব্লক করা হয়েছে।')
       : cfg.mode === 'only'
-        ? (en ? 'This channel is not on your allowed list.' : 'এই চ্যানেল আপনার অনুমোদিত তালিকায় নেই।')
-        : (en ? 'You blocked this channel.' : 'এই চ্যানেল আপনি ব্লক করেছেন।');
+        ? (en ? 'This video or channel does not match your allowed list.' : 'এই ভিডিও বা চ্যানেল আপনার অনুমোদিত তালিকার সাথে মেলে না।')
+        : (en ? 'You blocked this video or channel.' : 'এই ভিডিও বা চ্যানেল আপনি ব্লক করেছেন।');
     const back = document.createElement('button');
     back.textContent = en ? '← Go back' : '← ফিরে যান';
     back.addEventListener('click', () => history.back());

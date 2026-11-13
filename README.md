@@ -19,9 +19,21 @@
 
 ![কীওয়ার্ড ফিল্টার](store/screenshots/1-keyword-filter.png)
 
+## ডাউনলোড
+
+আপনার browser-এর জন্য **একটা** ফাইল নিন:
+
+| আপনার browser | ডাউনলোড |
+|---|---|
+| **Chrome, Edge, Brave, Opera, Vivaldi, Arc** (সব Chromium-ভিত্তিক) | **[⬇ quiet-feed-chromium.zip](https://github.com/bulbuljessore/Quiet-Feed/releases/latest/download/quiet-feed-chromium.zip)** |
+| **Firefox** | **[⬇ quiet-feed-firefox.zip](https://github.com/bulbuljessore/Quiet-Feed/releases/latest/download/quiet-feed-firefox.zip)** |
+
+নিশ্চিত না হলে: আপনার browser Firefox হলে Firefox ফাইল, বাকি সব browser-এর জন্য Chromium ফাইল। ইনস্টলের ধাপ নিচে। দরকারি সবকিছু এই ZIP-এর ভেতরেই আছে; রিপোর অন্য ফোল্ডারগুলো সোর্স কোড, সরাসরি ইনস্টল করার জন্য নয়।
+
 ## কী কী করে
 - **কীওয়ার্ড ফিল্টার:** Facebook, X, Reddit, ব্লগ, নিউজ সাইটসহ যেকোনো পেজে আপনার তালিকার শব্দ থাকলে সেই পোস্ট, কমেন্ট বা লেখা লুকিয়ে যায়। বাংলা ও ইংরেজি দুটোই চলে।
 - **ছবির ভেতরের লেখা:** বাংলা ও ইংরেজি OCR দিয়ে ছবির লেখা পড়ে, মিললে ছবি লুকায়। সব কাজ আপনার কম্পিউটারেই হয়।
+- **YouTube শব্দ ও প্রিসেট:** শুধু চ্যানেল নয়, ভিডিওর শিরোনাম বা চ্যানেলের নামের শব্দ দিয়েও ব্লক বা অনুমোদন করা যায়। "শুধু এগুলো দেখাও" মোডে `education`, `শিক্ষা` ধরনের শব্দ দিলে শুধু সেগুলো মেলা ভিডিও দেখায়, আর `football`, `cartoon`-এর মতো ব্লক করা শব্দ সবসময় জেতে। এক ক্লিকের প্রিসেট: শিশু ৩–৬ বছর শিক্ষা, শিশু ৭–১২ বছর শিক্ষা, ফুটবল/কার্টুন/গেম ব্লক। এটা শিরোনামের শব্দ দিয়ে কাজ করে, তাই শিশুর নিরাপত্তার নিশ্চয়তা নয়; শিশুদের জন্য YouTube Kids বা সুপারভাইজড অ্যাকাউন্টও ব্যবহার করুন।
 - **YouTube চ্যানেল ব্লক:** ব্লক করা চ্যানেলের ভিডিও, Shorts, কমেন্ট ও চ্যানেল পেজ আর দেখা যায় না।
 - **YouTube-এ "শুধু এগুলো দেখাও" মোড:** পছন্দের চ্যানেল বেছে নিন, বাকি সব লুকিয়ে যাবে।
 - **Related কনটেন্ট নিয়ন্ত্রণ:** ব্লক করা চ্যানেলের নাম শিরোনামে থাকা ভিডিও লুকানো যায়। শুধু-দেখাও মোডে "Related" সাইডবার রাখা বা লুকানো যায়।
@@ -38,7 +50,7 @@
 ## ইনস্টল (Chrome, Edge, Brave, Opera, Vivaldi, Arc)
 এই Extension এখনো কোনো স্টোরে নেই, তাই নিজে লোড করতে হয়। এতে ২ মিনিট লাগে।
 
-1. [Releases](../../releases) পেজ থেকে `quiet-feed-chromium-*.zip` ডাউনলোড করুন।
+1. **Chromium ZIP** ডাউনলোড করুন (উপরের বাটন, অথবা [Releases](../../releases) পেজের `quiet-feed-chromium.zip`)।
 2. ZIP-টা একটা ফোল্ডারে **Extract** করুন। (ZIP সরাসরি লোড হয় না; ফোল্ডারটা এমন জায়গায় রাখুন যেখান থেকে পরে মুছবেন না।)
 3. Browser-এ Extensions পেজ খুলুন:
    - Chrome: `chrome://extensions`
@@ -55,7 +67,7 @@
 ## ইনস্টল (Firefox)
 Firefox-এ স্টোরের বাইরের Extension শুধু **অস্থায়ীভাবে** (browser বন্ধ করলে চলে যায়) লোড হয়।
 
-1. Releases থেকে `quiet-feed-firefox-*.zip` ডাউনলোড করুন।
+1. **Firefox ZIP** ডাউনলোড করুন (উপরের বাটন, অথবা Releases পেজের `quiet-feed-firefox.zip`)।
 2. Firefox-এ `about:debugging#/runtime/this-firefox` খুলুন।
 3. **Load Temporary Add-on...** চেপে ZIP ফাইলটা (বা Extract করা ফোল্ডারের `manifest.json`) সিলেক্ট করুন।
 4. সব ওয়েবসাইটে অ্যাক্সেসের অনুমতি দিন।
@@ -100,7 +112,7 @@ cd Quiet-Feed
 node build.js        # dist/ ফোল্ডারে Chromium ও Firefox ZIP তৈরি করে
 ```
 - রিপোর মূল ফোল্ডার সরাসরি Chromium-এ **Load unpacked** করা যায়।
-- Firefox সংস্করণের manifest আর background আছে `firefox/` ফোল্ডারে।
+- `install/chromium/` ও `install/firefox/` হলো সরাসরি লোড করার তৈরি ফোল্ডার (`node build.js` বানায়)। `build-firefox/`-এ শুধু Firefox-এর আলাদা দুটো সোর্স ফাইল আছে, ওটা ইনস্টল করার জন্য নয়।
 - Node.js ১৮ বা তার পরের সংস্করণ লাগে। Windows-এ ZIP বানাতে `tar.exe` (Windows 10+ এ থাকে) ব্যবহার হয়।
 - স্ক্রিনশট আবার বানাতে: `cd store/screenshots && node gen.js` (Microsoft Edge লাগে)।
 

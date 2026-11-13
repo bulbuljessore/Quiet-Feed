@@ -3,6 +3,8 @@ const DEFAULT_YT = {
   mode: 'block',
   blocked: [],
   allowed: [],
+  blockedWords: [],
+  allowedWords: [],
   relatedByName: true,
   showRelatedInOnly: false
 };
@@ -192,13 +194,16 @@ function saveYt() {
 
 function renderYt() {
   document.querySelectorAll('input[name="mode"]').forEach((r) => { r.checked = r.value === yt.mode; });
-  $('yt-block-box').hidden = yt.mode !== 'block';
+  $('yt-block-box').hidden = yt.mode === 'off';   // blocked channels and words apply in both modes
   $('yt-only-box').hidden = yt.mode !== 'only';
   $('relatedByName').checked = !!yt.relatedByName;
   $('showRelatedInOnly').checked = !!yt.showRelatedInOnly;
 
   renderList($('blocked-list'), $('blocked-empty'), yt.blocked, (i) => { yt.blocked.splice(i, 1); saveYt(); });
-  renderList($('allowed-list'), $('allowed-empty'), yt.allowed, (i) => { yt.allowed.splice(i, 1); saveYt(); });
+  renderList($('allowed-list'), document.createElement('p'), yt.allowed, (i) => { yt.allowed.splice(i, 1); saveYt(); });
+  renderList($('bwords-list'), document.createElement('p'), yt.blockedWords, (i) => { yt.blockedWords.splice(i, 1); saveYt(); });
+  renderList($('awords-list'), document.createElement('p'), yt.allowedWords, (i) => { yt.allowedWords.splice(i, 1); saveYt(); });
+  $('allowed-empty').hidden = yt.allowed.length > 0 || yt.allowedWords.length > 0;
 
   $('cur-block').disabled = !currentChannel;
   $('cur-allow').disabled = !currentChannel;
@@ -222,6 +227,33 @@ $('allowed-form').addEventListener('submit', (e) => {
   e.preventDefault();
   if (addUnique(yt.allowed, normalizeChannel($('allowed-input').value))) saveYt();
   $('allowed-input').value = '';
+});
+
+$('bwords-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (addUnique(yt.blockedWords, $('bwords-input').value)) {
+    if (yt.mode === 'off') yt.mode = 'block';
+    saveYt();
+  }
+  $('bwords-input').value = '';
+});
+$('awords-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (addUnique(yt.allowedWords, $('awords-input').value)) saveYt();
+  $('awords-input').value = '';
+});
+
+// presets: copy a word pack into the lists above
+document.querySelectorAll('[data-preset]').forEach((b) => {
+  b.addEventListener('click', () => {
+    const p = YT_PRESETS[b.dataset.preset];
+    if (!p) return;
+    (p.allowedWords || []).forEach((w) => addUnique(yt.allowedWords, w));
+    (p.blockedWords || []).forEach((w) => addUnique(yt.blockedWords, w));
+    if (p.mode === 'only') yt.mode = 'only';
+    else if (yt.mode === 'off') yt.mode = 'block';
+    saveYt();
+  });
 });
 
 $('cur-block').addEventListener('click', () => {
@@ -294,6 +326,8 @@ chrome.storage.sync.get({ enabled: true, keywords: null, yt: null, blur: null, l
   yt = { ...DEFAULT_YT, ...(s.yt || {}) };
   yt.blocked = Array.isArray(yt.blocked) ? yt.blocked : [];
   yt.allowed = Array.isArray(yt.allowed) ? yt.allowed : [];
+  yt.blockedWords = Array.isArray(yt.blockedWords) ? yt.blockedWords : [];
+  yt.allowedWords = Array.isArray(yt.allowedWords) ? yt.allowedWords : [];
   $('enabled').checked = s.enabled !== false;
   renderKeywords();
   renderYt();

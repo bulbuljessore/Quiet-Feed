@@ -1,0 +1,19 @@
+This folder is NOT an installable extension.
+
+It only holds the two files that differ for Firefox (manifest.json and background.js).
+`node build.js` combines them with the shared code to produce the real Firefox package.
+
+To INSTALL in Firefox use:
+  - install/firefox/   (ready-to-load folder), or
+  - the quiet-feed-firefox.zip file on the GitHub Releases page.
+
+---
+
+এই ফোলডার ইনস্টল করার জন্য নয়।
+
+এখানে শুধু Firefox-এর আলাদা দুটো ফাইল (manifest.json ও background.js) আছে।
+`node build.js` এগুলোর সাথে বাকি কোড মিলিয়ে আসল Firefox প্যাকেজ বানায়।
+
+Firefox-এ ইনস্টল করতে ব্যবহার করুন:
+  - install/firefox/ ফোলডার, অথবা
+  - GitHub Releases পেজের quiet-feed-firefox.zip ফাইল।

@@ -4,3 +4,4 @@ store/screenshots/src/
 *.zip
 .DS_Store
 Thumbs.db
+_metadata/

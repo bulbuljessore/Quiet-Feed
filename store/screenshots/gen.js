@@ -99,7 +99,7 @@ function build(lang) {
     kw: popupPage({ state: { enabled: true, lang, keywords: x.keywords, yt: null }, tab: 'kw', url: 'https://news.example.com/', count: { 'count:news.example.com': 3 } }),
     ytblock: popupPage({ state: { enabled: true, lang, keywords: [], yt: { mode: 'block', blocked: ['@noisy_channel', 'Daily Drama Show'], allowed: [], relatedByName: true, showRelatedInOnly: false } },
       tab: 'yt', url: 'https://www.youtube.com/watch?v=demo', channel: { value: '@sample_channel', label: 'Sample Channel' } }),
-    ytonly: popupPage({ state: { enabled: true, lang, keywords: [], yt: { mode: 'only', blocked: [], allowed: ['@learn_with_sam', '@cooking_corner', 'Nature Docs'], relatedByName: true, showRelatedInOnly: false } },
+    ytonly: popupPage({ state: { enabled: true, lang, keywords: [], yt: { mode: 'only', blocked: [], allowed: ['@learn_with_sam', 'Nature Docs'], allowedWords: ['education', 'learning', 'kids'], blockedWords: ['football', 'cartoon'], relatedByName: true, showRelatedInOnly: false } },
       tab: 'yt', url: 'https://www.youtube.com/', channel: null }),
     img: popupPage({ state: { enabled: true, lang, keywords: x.keywords.slice(0, 3), yt: null }, tab: 'kw', url: 'https://social.example.com/', count: { 'count:social.example.com': 2 } })
   };

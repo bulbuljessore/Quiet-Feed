@@ -5,8 +5,8 @@
 
 | ফাইল | কোথায় দেবেন |
 |---|---|
-| `quiet-feed-chromium-1.0.0.zip` | Chrome Web Store, Microsoft Edge Add-ons, Opera Add-ons |
-| `quiet-feed-firefox-1.0.0.zip` | Firefox Add-ons (AMO) |
+| `quiet-feed-chromium.zip` | Chrome Web Store, Microsoft Edge Add-ons, Opera Add-ons |
+| `quiet-feed-firefox.zip` | Firefox Add-ons (AMO) |
 
 Brave, Vivaldi, Arc আলাদা স্টোর চালায় না। ওগুলোর ব্যবহারকারীরা Chrome Web Store থেকেই ইনস্টল করেন, তাই আলাদা submit লাগবে না।
 
@@ -20,7 +20,7 @@ Brave, Vivaldi, Arc আলাদা স্টোর চালায় না।
 
 ## ১. Chrome Web Store
 1. https://chrome.google.com/webstore/devconsole এ Google অ্যাকাউন্টে ঢুকুন। প্রথমবার $5 রেজিস্ট্রেশন ফি দিতে হয়।
-2. **New item** → `quiet-feed-chromium-1.0.0.zip` আপলোড।
+2. **New item** → `quiet-feed-chromium.zip` আপলোড।
 3. **Store listing** ট্যাব: নাম, বিবরণ, ক্যাটাগরি, ভাষা, স্ক্রিনশট, আইকন (128px আইকন প্যাকেজেই আছে)।
 4. **Privacy** ট্যাব: `STORE-LISTING.md`-এর নিচের অংশ থেকে Single purpose, Permission justifications, Remote code, Data usage আর Privacy policy URL দিন।
 5. **Distribution**: Public (বা Unlisted, যদি শুধু লিংক দিয়ে শেয়ার করতে চান), দেশ বাছুন।
@@ -39,7 +39,7 @@ Brave, Vivaldi, Arc আলাদা স্টোর চালায় না।
 
 ## ৪. Firefox Add-ons (AMO)
 1. https://addons.mozilla.org/developers/ এ Firefox অ্যাকাউন্ট দিয়ে ঢুকুন (ফ্রি, 2FA চালু করতে হয়)।
-2. **Submit a New Add-on** → **On this site** (সবার জন্য পাবলিক) → `quiet-feed-firefox-1.0.0.zip` আপলোড।
+2. **Submit a New Add-on** → **On this site** (সবার জন্য পাবলিক) → `quiet-feed-firefox.zip` আপলোড।
 3. স্বয়ংক্রিয় validation চলবে। `tesseract` ফাইলে ৫টা warning দেখাবে (eval সম্পর্কিত), এগুলো ব্লক করে না।
 4. "Do you need to submit source code?" প্রশ্নে **No** বলা যায়, কারণ আমাদের নিজের কোড মিনিফাই করা নয়। তবে Notes to Reviewer-এ `STORE-LISTING.md`-এর নিচের ইংরেজি লেখাটা পেস্ট করুন, এতে লাইব্রেরি যাচাই সহজ হয়।
 5. নাম, summary, বিবরণ, ক্যাটাগরি, স্ক্রিনশট, support email, privacy policy লিংক, license (যেমন MIT) দিন।
@@ -53,6 +53,6 @@ Firefox-এর জন্য মনে রাখবেন: ইনস্টলে�
 - **Privacy policy লিংক কাজ করে না বা নেই**।
 
 ## পরে আপডেট দিতে
-1. `manifest.json` আর `firefox/manifest.json`-এ `version` বাড়ান (যেমন 1.0.1)।
+1. `manifest.json` আর `build-firefox/manifest.json`-এ `version` বাড়ান (যেমন 1.0.1)।
 2. `node build.js` চালান।
 3. প্রতিটা স্টোরের ড্যাশবোর্ডে নতুন ZIP আপলোড করুন।

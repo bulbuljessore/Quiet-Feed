@@ -57,16 +57,16 @@
       <label><input type="radio" name="mode" value="only"> <span data-i18n="modeOnly"></span></label>
     </fieldset>
 
-    <div id="yt-block-box">
-      <h2 data-i18n="blockedTitle"></h2>
-      <form id="blocked-form" class="add-form" autocomplete="off">
-        <input type="text" id="blocked-input" data-i18n-ph="chPlaceholder" maxlength="200" required>
-        <button type="submit" data-i18n="block"></button>
-      </form>
-      <ul id="blocked-list"></ul>
-      <p id="blocked-empty" class="empty" data-i18n="blockedEmpty" hidden></p>
-      <label class="check"><input type="checkbox" id="relatedByName">
-        <span data-i18n="relatedByName"></span></label>
+    <div id="yt-presets">
+      <h2 data-i18n="presetsTitle"></h2>
+      <div class="chips">
+        <button type="button" class="chip" data-preset="kid" data-i18n="presetKid"></button>
+        <button type="button" class="chip" data-preset="school" data-i18n="presetSchool"></button>
+        <button type="button" class="chip" data-preset="football" data-i18n="presetFootball"></button>
+        <button type="button" class="chip" data-preset="cartoon" data-i18n="presetCartoon"></button>
+        <button type="button" class="chip" data-preset="games" data-i18n="presetGames"></button>
+      </div>
+      <p class="hint" data-i18n="presetsHint"></p>
     </div>
 
     <div id="yt-only-box">
@@ -76,9 +76,33 @@
         <button type="submit" data-i18n="addShort"></button>
       </form>
       <ul id="allowed-list"></ul>
+      <h2 data-i18n="allowedWordsTitle"></h2>
+      <form id="awords-form" class="add-form" autocomplete="off">
+        <input type="text" id="awords-input" data-i18n-ph="wordPlaceholder" maxlength="80" required>
+        <button type="submit" data-i18n="addShort"></button>
+      </form>
+      <ul id="awords-list"></ul>
       <p id="allowed-empty" class="empty warn" data-i18n="allowedEmpty" hidden></p>
       <label class="check"><input type="checkbox" id="showRelatedInOnly">
         <span data-i18n="showRelated"></span></label>
+    </div>
+
+    <div id="yt-block-box">
+      <h2 data-i18n="blockedTitle"></h2>
+      <form id="blocked-form" class="add-form" autocomplete="off">
+        <input type="text" id="blocked-input" data-i18n-ph="chPlaceholder" maxlength="200" required>
+        <button type="submit" data-i18n="block"></button>
+      </form>
+      <ul id="blocked-list"></ul>
+      <p id="blocked-empty" class="empty" data-i18n="blockedEmpty" hidden></p>
+      <h2 data-i18n="blockedWordsTitle"></h2>
+      <form id="bwords-form" class="add-form" autocomplete="off">
+        <input type="text" id="bwords-input" data-i18n-ph="wordPlaceholder" maxlength="80" required>
+        <button type="submit" data-i18n="addShort"></button>
+      </form>
+      <ul id="bwords-list"></ul>
+      <label class="check"><input type="checkbox" id="relatedByName">
+        <span data-i18n="relatedByName"></span></label>
     </div>
 
     <div class="current">
@@ -111,6 +135,7 @@
   </footer>
 
   <script src="i18n.js"></script>
+  <script src="yt-presets.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
