@@ -1,0 +1,341 @@
+const DEFAULT_KEYWORDS = [];
+const DEFAULT_YT = {
+  mode: 'block',
+  blocked: [],
+  allowed: [],
+  blockedWords: [],
+  allowedWords: [],
+  relatedByName: true,
+  showRelatedInOnly: false
+};
+
+const $ = (id) => document.getElementById(id);
+
+let keywords = [];
+let yt = { ...DEFAULT_YT };
+let currentChannel = null;
+let blur = { all: false, sites: [] };
+let currentHost = null;
+let adult = { on: false, blockSites: true, safeSearch: true, allowReveal: true };
+
+// ---------- adult content ----------
+function saveAdult() {
+  chrome.storage.sync.set({ adult });
+  renderAdult();
+}
+
+function renderAdult() {
+  $('adultOn').checked = !!adult.on;
+  $('adultSites').checked = adult.blockSites !== false;
+  $('adultSafe').checked = adult.safeSearch !== false;
+  $('adultReveal').checked = adult.allowReveal !== false;
+  $('adult-options').hidden = !adult.on;
+}
+$('adultOn').addEventListener('change', () => { adult.on = $('adultOn').checked; saveAdult(); });
+$('adultSites').addEventListener('change', () => { adult.blockSites = $('adultSites').checked; saveAdult(); });
+$('adultSafe').addEventListener('change', () => { adult.safeSearch = $('adultSafe').checked; saveAdult(); });
+$('adultReveal').addEventListener('change', () => { adult.allowReveal = $('adultReveal').checked; saveAdult(); });
+
+// ---------- blur mode ----------
+function saveBlur() {
+  chrome.storage.sync.set({ blur });
+  renderBlur();
+}
+
+function renderBlur() {
+  $('blurAll').checked = !!blur.all;
+  renderList($('blur-list'), document.createElement('p'), blur.sites, (i) => {
+    blur.sites.splice(i, 1);
+    saveBlur();
+  });
+  const btn = $('blur-site');
+  btn.disabled = !currentHost;
+  const has = currentHost && blur.sites.some((s) => s.toLowerCase() === currentHost);
+  btn.textContent = !currentHost
+    ? t('blurSiteDefault')
+    : t(has ? 'blurSiteOn' : 'blurSiteOff', { host: currentHost });
+}
+
+// ---------- update notice ----------
+function cmpVersions(a, b) {
+  const pa = String(a).split('.').map((n) => parseInt(n, 10) || 0);
+  const pb = String(b).split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0);
+    if (d) return d > 0 ? 1 : -1;
+  }
+  return 0;
+}
+let updateInfo = null;
+
+function renderUpdate() {
+  const current = chrome.runtime.getManifest().version;
+  $('ver').textContent = t('version', { v: current });
+  const ok = updateInfo && /^https://github.com//.test(updateInfo.url || '') && cmpVersions(updateInfo.version, current) > 0;
+  $('update-banner').hidden = !ok;
+  if (ok) {
+    $('update-text').textContent = t('updAvail', { v: updateInfo.version });
+    $('update-link').href = updateInfo.url;
+  }
+}
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.update) { updateInfo = changes.update.newValue || null; renderUpdate(); }
+});
+$('updateCheck').addEventListener('change', () => {
+  chrome.storage.sync.set({ updateCheck: $('updateCheck').checked });
+});
+
+// ---------- language ----------
+function setLang(l) {
+  setLangValue(l);
+  chrome.storage.sync.set({ lang: LANG });
+  $('lang-bn').setAttribute('aria-pressed', String(LANG === 'bn'));
+  $('lang-en').setAttribute('aria-pressed', String(LANG === 'en'));
+  applyI18n();
+  renderKeywords();
+  renderYt();
+  renderBlur();
+  renderAdult();
+  renderUpdate();
+  showCount();
+}
+$('lang-bn').addEventListener('click', () => setLang('bn'));
+$('lang-en').addEventListener('click', () => setLang('en'));
+
+$('blurAll').addEventListener('change', () => { blur.all = $('blurAll').checked; saveBlur(); });
+$('blur-site').addEventListener('click', () => {
+  if (!currentHost) return;
+  const i = blur.sites.findIndex((s) => s.toLowerCase() === currentHost);
+  if (i >= 0) blur.sites.splice(i, 1);
+  else blur.sites.push(currentHost);
+  saveBlur();
+});
+
+function detectHost() {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    try {
+      const u = new URL(tabs[0].url);
+      if (/^https?:$/.test(u.protocol)) currentHost = u.hostname.replace(/^www\./, '').toLowerCase();
+    } catch (_) { /* not a web page */ }
+    renderBlur();
+  });
+}
+
+// ---------- generic list helper ----------
+function renderList(ul, emptyEl, items, onRemove) {
+  ul.textContent = '';
+  items.forEach((k, i) => {
+    const li = document.createElement('li');
+    const span = document.createElement('span');
+    span.textContent = k;
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.textContent = '×';
+    del.setAttribute('aria-label', t('removeAria', { x: k }));
+    del.addEventListener('click', () => onRemove(i));
+    li.append(span, del);
+    ul.appendChild(li);
+  });
+  emptyEl.hidden = items.length > 0;
+}
+
+function addUnique(arr, value) {
+  const v = value.normalize('NFC').trim();
+  if (!v) return false;
+  if (arr.some((x) => x.toLowerCase() === v.toLowerCase())) return false;
+  arr.push(v);
+  return true;
+}
+
+// Accepts @handle, plain name, /channel/UC... or a full YouTube link.
+function normalizeChannel(input) {
+  const raw = input.normalize('NFC').trim();
+  if (/^https?:\/\//i.test(raw) || /youtube\.com\//i.test(raw)) {
+    try {
+      const u = new URL(/^https?:/i.test(raw) ? raw : 'https://' + raw);
+      const p = decodeURIComponent(u.pathname);
+      let m;
+      if ((m = p.match(/^\/(@[^/]+)/))) return m[1];
+      if ((m = p.match(/^\/channel\/([^/]+)/))) return m[1];
+      if ((m = p.match(/^\/(?:c|user)\/([^/]+)/))) return m[1];
+    } catch (_) { /* treat as plain text */ }
+  }
+  return raw;
+}
+
+// ---------- keywords ----------
+function renderKeywords() {
+  renderList($('kw-list'), $('kw-empty'), keywords, (i) => {
+    keywords.splice(i, 1);
+    chrome.storage.sync.set({ keywords });
+    renderKeywords();
+  });
+}
+
+$('kw-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (addUnique(keywords, $('kw-input').value)) {
+    chrome.storage.sync.set({ keywords });
+    renderKeywords();
+  }
+  $('kw-input').value = '';
+});
+
+$('enabled').addEventListener('change', () => {
+  chrome.storage.sync.set({ enabled: $('enabled').checked });
+});
+
+// ---------- YouTube ----------
+function saveYt() {
+  chrome.storage.sync.set({ yt });
+  renderYt();
+}
+
+function renderYt() {
+  document.querySelectorAll('input[name="mode"]').forEach((r) => { r.checked = r.value === yt.mode; });
+  $('yt-block-box').hidden = yt.mode === 'off';   // blocked channels and words apply in both modes
+  $('yt-only-box').hidden = yt.mode !== 'only';
+  $('relatedByName').checked = !!yt.relatedByName;
+  $('showRelatedInOnly').checked = !!yt.showRelatedInOnly;
+
+  renderList($('blocked-list'), $('blocked-empty'), yt.blocked, (i) => { yt.blocked.splice(i, 1); saveYt(); });
+  renderList($('allowed-list'), document.createElement('p'), yt.allowed, (i) => { yt.allowed.splice(i, 1); saveYt(); });
+  renderList($('bwords-list'), document.createElement('p'), yt.blockedWords, (i) => { yt.blockedWords.splice(i, 1); saveYt(); });
+  renderList($('awords-list'), document.createElement('p'), yt.allowedWords, (i) => { yt.allowedWords.splice(i, 1); saveYt(); });
+  $('allowed-empty').hidden = yt.allowed.length > 0 || yt.allowedWords.length > 0;
+
+  $('cur-block').disabled = !currentChannel;
+  $('cur-allow').disabled = !currentChannel;
+  $('current-label').textContent = currentChannel
+    ? t('curLabel', { name: currentChannel.label })
+    : t('curNone');
+}
+
+document.querySelectorAll('input[name="mode"]').forEach((r) => {
+  r.addEventListener('change', () => { if (r.checked) { yt.mode = r.value; saveYt(); } });
+});
+$('relatedByName').addEventListener('change', () => { yt.relatedByName = $('relatedByName').checked; saveYt(); });
+$('showRelatedInOnly').addEventListener('change', () => { yt.showRelatedInOnly = $('showRelatedInOnly').checked; saveYt(); });
+
+$('blocked-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (addUnique(yt.blocked, normalizeChannel($('blocked-input').value))) saveYt();
+  $('blocked-input').value = '';
+});
+$('allowed-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (addUnique(yt.allowed, normalizeChannel($('allowed-input').value))) saveYt();
+  $('allowed-input').value = '';
+});
+
+$('bwords-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (addUnique(yt.blockedWords, $('bwords-input').value)) {
+    if (yt.mode === 'off') yt.mode = 'block';
+    saveYt();
+  }
+  $('bwords-input').value = '';
+});
+$('awords-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (addUnique(yt.allowedWords, $('awords-input').value)) saveYt();
+  $('awords-input').value = '';
+});
+
+// presets: copy a word pack into the lists above
+document.querySelectorAll('[data-preset]').forEach((b) => {
+  b.addEventListener('click', () => {
+    const p = YT_PRESETS[b.dataset.preset];
+    if (!p) return;
+    (p.allowedWords || []).forEach((w) => addUnique(yt.allowedWords, w));
+    (p.blockedWords || []).forEach((w) => addUnique(yt.blockedWords, w));
+    if (p.mode === 'only') yt.mode = 'only';
+    else if (yt.mode === 'off') yt.mode = 'block';
+    saveYt();
+  });
+});
+
+$('cur-block').addEventListener('click', () => {
+  if (currentChannel && addUnique(yt.blocked, currentChannel.value)) {
+    yt.mode = 'block';
+    saveYt();
+  }
+});
+$('cur-allow').addEventListener('click', () => {
+  if (currentChannel && addUnique(yt.allowed, currentChannel.value)) {
+    yt.mode = 'only';
+    saveYt();
+  }
+});
+
+function detectCurrentChannel() {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const tab = tabs && tabs[0];
+    if (!tab || !/^https:\/\/[^/]*youtube\.com\//.test(tab.url || '')) return;
+    chrome.tabs.sendMessage(tab.id, { type: 'yt-current-channel' }, (res) => {
+      if (chrome.runtime.lastError || !res) return;
+      currentChannel = res;
+      renderYt();
+    });
+  });
+}
+
+// ---------- tabs ----------
+function selectTab(which) {
+  if (!['kw', 'yt', 'adult'].includes(which)) which = 'kw';
+  for (const k of ['kw', 'yt', 'adult']) {
+    $('tab-' + k).setAttribute('aria-selected', String(k === which));
+    $('panel-' + k).hidden = k !== which;
+  }
+  try { localStorage.setItem('srk-tab', which); } catch (_) { /* ignore */ }
+}
+$('tab-kw').addEventListener('click', () => selectTab('kw'));
+$('tab-yt').addEventListener('click', () => selectTab('yt'));
+$('tab-adult').addEventListener('click', () => selectTab('adult'));
+
+// ---------- page counter ----------
+function showCount() {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    try {
+      const host = new URL(tabs[0].url).hostname;
+      chrome.storage.local.get('count:' + host, (r) => {
+        const n = r['count:' + host] || 0;
+        $('count').textContent = n ? t('count', { n }) : '';
+      });
+    } catch (_) {
+      $('count').textContent = '';
+    }
+  });
+}
+
+// ---------- init ----------
+chrome.storage.sync.get({ enabled: true, keywords: null, yt: null, blur: null, lang: 'bn', adult: null, updateCheck: true }, (s) => {
+  $('updateCheck').checked = s.updateCheck !== false;
+  setLangValue(s.lang);
+  $('lang-bn').setAttribute('aria-pressed', String(LANG === 'bn'));
+  $('lang-en').setAttribute('aria-pressed', String(LANG === 'en'));
+  applyI18n();
+  keywords = s.keywords === null ? DEFAULT_KEYWORDS.slice() : s.keywords;
+  blur = { all: false, sites: [], ...(s.blur || {}) };
+  if (!Array.isArray(blur.sites)) blur.sites = [];
+  adult = { on: false, blockSites: true, safeSearch: true, allowReveal: true, ...(s.adult || {}) };
+  renderAdult();
+  renderBlur();
+  detectHost();
+  yt = { ...DEFAULT_YT, ...(s.yt || {}) };
+  yt.blocked = Array.isArray(yt.blocked) ? yt.blocked : [];
+  yt.allowed = Array.isArray(yt.allowed) ? yt.allowed : [];
+  yt.blockedWords = Array.isArray(yt.blockedWords) ? yt.blockedWords : [];
+  yt.allowedWords = Array.isArray(yt.allowedWords) ? yt.allowedWords : [];
+  $('enabled').checked = s.enabled !== false;
+  renderKeywords();
+  renderYt();
+  showCount();
+  detectCurrentChannel();
+  chrome.storage.local.get('update', (r) => { updateInfo = r.update || null; renderUpdate(); });
+  try { chrome.runtime.sendMessage({ type: 'check-update' }, () => { void chrome.runtime.lastError; }); } catch (_) { /* noop */ }
+  let tab = 'kw';
+  try { tab = localStorage.getItem('srk-tab') || 'kw'; } catch (_) { /* ignore */ }
+  selectTab(tab);
+});
