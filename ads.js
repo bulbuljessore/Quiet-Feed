@@ -29,6 +29,11 @@
     '.adsbygoogle',
     '.ad-slot',
     '.ad-banner',
+    '.ad', '.ads', '.advert', '.advertisement', '.ad-wrapper', '.ad-unit', '.adunit', '.ad-box', '.ad-container',
+    '.banner-ad', '.banner-ads', '.header-ad', '.sidebar-ad', '.top-ad', '.bottom-ad', '.sticky-ad',
+    'amp-ad', 'amp-embed[type="taboola"]', 'amp-embed[type="outbrain"]',
+    'a[href*="doubleclick.net/"]', 'a[href*="googleadservices.com/"]',
+    'iframe[src*="/ads/"]', 'iframe[src*="adserver"]', 'iframe[id^="aswift_"]', 'div[id^="aswift_"]',
     '.advert-banner',
     '.sponsored-ad',
     '.taboola-widget, [id^="taboola-"]',
@@ -62,17 +67,40 @@
     return false;
   }
 
+  // Facebook hides its "Sponsored" label from page text on purpose, so ads are recognised by
+  // other signals: the call-to-action button role (data-ad-rendering-role="cta-..."), the old
+  // /ads/about link, an aria-label, or a plain label. Feed posts are div[aria-posinset].
+  // The right column shows a plain "Sponsored" heading above its ads.
+  function fbRail(scope) {
+    const root = scope && scope.querySelectorAll ? scope : document;
+    root.querySelectorAll('[role="complementary"] h3, [data-pagelet="RightRail"] h3').forEach((h) => {
+      if (h.textContent.trim().toLowerCase() !== 'sponsored' && h.textContent.trim() !== 'স্পনসর্ড') return;
+      // climb to the largest ancestor that holds only this heading (not "Contacts" etc.)
+      let c = h;
+      while (c.parentElement && c.parentElement.querySelectorAll('h3, h2').length === 1 &&
+             !c.parentElement.matches('[role="complementary"]') && !c.parentElement.matches('body')) {
+        c = c.parentElement;
+      }
+      if (c !== h) mark(c);
+    });
+  }
+  const fbIsComment = (el) => /^(comment|reply)/i.test(el.getAttribute('aria-label') || '');
+
   const SOCIAL = [
     { test: /(^|\.)facebook\.com$/,
-      items: 'div[role="article"], div[data-pagelet^="FeedUnit"]',
-      isAd: (el) => !!el.querySelector('a[href*="/ads/about"], [aria-label="Sponsored"], a[aria-label="Sponsored"]') || hasLabel(el, LABELS),
-      extra: ['div[data-pagelet="RightRail"] [data-pagelet*="Ad"]'] },
+      items: 'div[aria-posinset], div[role="article"], div[data-pagelet^="FeedUnit"]',
+      isAd: (el) => !fbIsComment(el) && (
+        !!el.querySelector('[data-ad-rendering-role^="cta"], a[href*="/ads/about"], [aria-label="Sponsored"], a[aria-label="Sponsored"]') ||
+        hasLabel(el, LABELS)),
+      custom: fbRail },
     { test: /(^|\.)instagram\.com$/,
       items: 'article',
       isAd: (el) => hasLabel(el, LABELS) },
     { test: /(^|\.)(x|twitter)\.com$/,
       items: 'article[data-testid="tweet"]',
-      isAd: (el) => hasLabel(el, X_LABELS) || !!el.querySelector('[data-testid="placementTracking"]'),
+      // NOTE: do not use [data-testid="placementTracking"]; X puts it around every video player,
+      // so it would hide all tweets with videos (checked on the live site). Only the label is used.
+      isAd: (el) => hasLabel(el, X_LABELS),
       container: 'div[data-testid="cellInnerDiv"]' },
     { test: /(^|\.)reddit\.com$/,
       items: 'shreddit-post, article, .thing',
@@ -122,6 +150,7 @@
       }
     }
     for (const sel of rule.extra || []) scope.querySelectorAll(sel).forEach(mark);
+    if (rule.custom) rule.custom(scope);
   }
 
   // ---------- run / observe ----------
@@ -164,6 +193,8 @@
       if (!observing && document.body) {
         observing = true;
         observer.observe(document.body, { childList: true, subtree: true });
+        // slow safety net: late-rendered labels or virtualised lists can be missed by the observer
+        setInterval(() => { if (active && cfg.social) scanSocial(document); }, 2500);
       }
       scanSocial(document);
     } else {
