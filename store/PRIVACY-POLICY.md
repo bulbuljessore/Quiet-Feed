@@ -18,9 +18,9 @@ The extension has no servers, no analytics, no advertising and no third-party co
 
 The only network request the extension makes on its own is an optional update check: about every 12 hours it asks the public GitHub API (api.github.com) for the latest release of this project. The request contains no personal data and no browsing information; GitHub sees only the IP address, as for any web request, under GitHub's own privacy policy. You can turn the check off in the popup.
 
-The optional ad blocker uses a list of ad and tracking domains that is bundled in the extension. Requests to those domains are blocked locally by your browser; nothing is reported anywhere.
+When the optional adult-content filter is on, the extension adds a SafeSearch parameter to the address of Google, Bing and DuckDuckGo search pages. This is done locally in your browser.
 
-When the optional adult-content filter is on, the extension adds a SafeSearch parameter to the address of Google, Bing and DuckDuckGo search pages. This is done locally in your browser. The text-recognition engine and its language data are bundled inside the extension and run on your device.
+The text-recognition engine and its language data are bundled inside the extension and run on your device.
 
 ## Permissions
 - Storage: save your lists and settings.

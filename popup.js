@@ -15,42 +15,6 @@ let currentChannel = null;
 let blur = { all: false, sites: [] };
 let currentHost = null;
 let adult = { on: false, blockSites: true, safeSearch: true, allowReveal: true };
-let ads = { on: false, network: true, cosmetic: true, social: true, allowSites: [] };
-
-// ---------- ads ----------
-function saveAds() {
-  chrome.storage.sync.set({ ads });
-  renderAds();
-}
-
-function renderAds() {
-  $('adsOn').checked = !!ads.on;
-  $('adsNetwork').checked = ads.network !== false;
-  $('adsCosmetic').checked = ads.cosmetic !== false;
-  $('adsSocial').checked = ads.social !== false;
-  $('ads-options').hidden = !ads.on;
-  renderList($('ads-list'), document.createElement('p'), ads.allowSites, (i) => {
-    ads.allowSites.splice(i, 1);
-    saveAds();
-  });
-  const btn = $('ads-site');
-  btn.disabled = !currentHost;
-  const has = currentHost && ads.allowSites.some((s) => s.toLowerCase() === currentHost);
-  btn.textContent = !currentHost
-    ? t('adsSiteDefault')
-    : t(has ? 'adsSiteOn' : 'adsSiteOff', { host: currentHost });
-}
-$('adsOn').addEventListener('change', () => { ads.on = $('adsOn').checked; saveAds(); });
-$('adsNetwork').addEventListener('change', () => { ads.network = $('adsNetwork').checked; saveAds(); });
-$('adsCosmetic').addEventListener('change', () => { ads.cosmetic = $('adsCosmetic').checked; saveAds(); });
-$('adsSocial').addEventListener('change', () => { ads.social = $('adsSocial').checked; saveAds(); });
-$('ads-site').addEventListener('click', () => {
-  if (!currentHost) return;
-  const i = ads.allowSites.findIndex((s) => s.toLowerCase() === currentHost);
-  if (i >= 0) ads.allowSites.splice(i, 1);
-  else ads.allowSites.push(currentHost);
-  saveAds();
-});
 
 // ---------- adult content ----------
 function saveAdult() {
@@ -131,7 +95,6 @@ function setLang(l) {
   renderYt();
   renderBlur();
   renderAdult();
-  renderAds();
   renderUpdate();
   showCount();
 }
@@ -154,7 +117,6 @@ function detectHost() {
       if (/^https?:$/.test(u.protocol)) currentHost = u.hostname.replace(/^www\./, '').toLowerCase();
     } catch (_) { /* not a web page */ }
     renderBlur();
-    renderAds();
   });
 }
 
@@ -289,8 +251,8 @@ function detectCurrentChannel() {
 
 // ---------- tabs ----------
 function selectTab(which) {
-  if (!['kw', 'yt', 'adult', 'ads'].includes(which)) which = 'kw';
-  for (const k of ['kw', 'yt', 'adult', 'ads']) {
+  if (!['kw', 'yt', 'adult'].includes(which)) which = 'kw';
+  for (const k of ['kw', 'yt', 'adult']) {
     $('tab-' + k).setAttribute('aria-selected', String(k === which));
     $('panel-' + k).hidden = k !== which;
   }
@@ -299,7 +261,6 @@ function selectTab(which) {
 $('tab-kw').addEventListener('click', () => selectTab('kw'));
 $('tab-yt').addEventListener('click', () => selectTab('yt'));
 $('tab-adult').addEventListener('click', () => selectTab('adult'));
-$('tab-ads').addEventListener('click', () => selectTab('ads'));
 
 // ---------- page counter ----------
 function showCount() {
@@ -317,9 +278,7 @@ function showCount() {
 }
 
 // ---------- init ----------
-chrome.storage.sync.get({ enabled: true, keywords: null, yt: null, blur: null, lang: 'bn', adult: null, ads: null, updateCheck: true }, (s) => {
-  ads = { on: false, network: true, cosmetic: true, social: true, ...(s.ads || {}) };
-  if (!Array.isArray(ads.allowSites)) ads.allowSites = [];
+chrome.storage.sync.get({ enabled: true, keywords: null, yt: null, blur: null, lang: 'bn', adult: null, updateCheck: true }, (s) => {
   $('updateCheck').checked = s.updateCheck !== false;
   setLangValue(s.lang);
   $('lang-bn').setAttribute('aria-pressed', String(LANG === 'bn'));
@@ -330,7 +289,6 @@ chrome.storage.sync.get({ enabled: true, keywords: null, yt: null, blur: null, l
   if (!Array.isArray(blur.sites)) blur.sites = [];
   adult = { on: false, blockSites: true, safeSearch: true, allowReveal: true, ...(s.adult || {}) };
   renderAdult();
-  renderAds();
   renderBlur();
   detectHost();
   yt = { ...DEFAULT_YT, ...(s.yt || {}) };

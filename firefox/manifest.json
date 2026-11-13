@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Quiet Feed – Keyword & Channel Filter",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "আপনার দেওয়া নাম বা কীওয়ার্ড যে পোস্ট, কমেন্ট বা লেখায় আছে, সেগুলো সোশ্যাল মিডিয়া ও ব্লগে লুকিয়ে রাখে। Hide posts and comments that mention names or keywords you choose.",
   "browser_specific_settings": {
     "gecko": {
@@ -40,7 +40,6 @@
     "scripts": [
       "vendor/tesseract.min.js",
       "safesearch.js",
-      "adblock.js",
       "updatecheck.js",
       "background.js"
     ]
@@ -93,25 +92,6 @@
       ],
       "run_at": "document_idle",
       "all_frames": false
-    },
-    {
-      "matches": [
-        "http://*/*",
-        "https://*/*"
-      ],
-      "js": [
-        "ads.js"
-      ],
-      "run_at": "document_idle"
     }
-  ],
-  "declarative_net_request": {
-    "rule_resources": [
-      {
-        "id": "ads",
-        "enabled": false,
-        "path": "rules/ads.json"
-      }
-    ]
-  }
+  ]
 }

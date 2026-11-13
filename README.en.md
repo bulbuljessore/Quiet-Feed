@@ -26,7 +26,6 @@ Quiet Feed hides posts, comments, articles and images that contain the names or 
 - **"Only show" mode on YouTube:** pick the channels you want to see and everything else is hidden.
 - **Related-content control:** optionally hide videos that mention a blocked channel in the title. In only-show mode, keep or hide the "Related" sidebar.
 - **Blur mode:** blur all images and videos, everywhere or only on the sites you choose. Click a picture to reveal it.
-- **Light ad blocker (optional):** blocks connections to about 140 well-known ad and tracking domains, hides empty ad slots, and hides Sponsored / Promoted posts on Facebook, Instagram, X, Reddit, LinkedIn and YouTube. You can switch it off for a single site. Turn it on in the **Ads** tab.
 - **Adult content filter (optional):** hides posts, comments, articles and image text that contain adult words (English and Bengali), hides YouTube videos and channels whose name or title match them, blocks well-known adult websites, and keeps Google, Bing and DuckDuckGo in SafeSearch. Turn it on in the **Adult** tab. It is separate from your own filters, so turning it on or off never affects them. By default hidden items have a **Show** button, and blocked sites have **Show anyway**; turn that option off for strict mode.
 - **Update notice:** a banner in the popup and a NEW badge tell you when a newer release is on GitHub.
 - **Bengali / English interface:** switch the popup language at any time.
@@ -90,7 +89,6 @@ Your keywords and settings are kept.
 ## Limitations
 - The adult filter has no list of individual YouTube channels. It matches adult words in channel names and video titles. It works from word and site lists. It does not recognize pictures, so some content can slip through, and an ordinary post that uses one of the listed words can be hidden by mistake. Use Blur mode for images.
 - SafeSearch is applied by rewriting search URLs; the search engine can still change how it treats that setting.
-- The ad blocker is deliberately light. It does not stop ads inside YouTube videos, and social sites change their pages often, so some Sponsored posts can slip through. For full-strength blocking, run [uBlock Origin Lite](https://github.com/uBlockOrigin/uBOL-home) alongside Quiet Feed. The domain list is in `rules/ad-domains.txt` (run `node build.js` after editing).
 - Image OCR is not perfect. Blurry, tiny or highly decorative text may be missed.
 - Images set through CSS `background-image` are not detected by OCR or blur mode.
 - YouTube changes its page structure from time to time. If something is not hidden, please [open an issue](../../issues).

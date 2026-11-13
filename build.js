@@ -10,27 +10,7 @@ const root = __dirname;
 const dist = path.join(root, 'dist');
 const version = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8')).version;
 
-// rules/ad-domains.txt -> rules/ads.json (declarativeNetRequest static ruleset)
-function genAdRules() {
-  const domains = fs.readFileSync(path.join(root, 'rules', 'ad-domains.txt'), 'utf8')
-    .split(/\r?\n/).map((l) => l.replace(/#.*/, '').trim().toLowerCase()).filter(Boolean);
-  const unique = Array.from(new Set(domains));
-  const types = ['script', 'image', 'sub_frame', 'xmlhttprequest', 'ping', 'media', 'font', 'stylesheet', 'other'];
-  const rules = [];
-  for (let i = 0; i < unique.length; i += 100) {
-    rules.push({
-      id: rules.length + 1,
-      priority: 1,
-      action: { type: 'block' },
-      condition: { requestDomains: unique.slice(i, i + 100), domainType: 'thirdParty', resourceTypes: types }
-    });
-  }
-  fs.writeFileSync(path.join(root, 'rules', 'ads.json'), JSON.stringify(rules, null, 1) + '\n');
-  console.log('rules/ads.json:', unique.length, 'domains in', rules.length, 'rules');
-}
-genAdRules();
-
-const shared = ['content.js', 'blur.js', 'adult.js', 'adult-terms.js', 'safesearch.js', 'updatecheck.js', 'adblock.js', 'ads.js', 'rules/ads.json', 'youtube.js', 'popup.html', 'popup.css', 'popup.js', 'i18n.js', 'icons', 'vendor'];
+const shared = ['content.js', 'blur.js', 'adult.js', 'adult-terms.js', 'safesearch.js', 'updatecheck.js', 'youtube.js', 'popup.html', 'popup.css', 'popup.js', 'i18n.js', 'icons', 'vendor'];
 
 function copy(src, dest) {
   fs.cpSync(src, dest, { recursive: true });

@@ -1,7 +1,7 @@
 // Relays OCR requests from content scripts to the offscreen document,
 // which runs Tesseract (needs a DOM + workers).
 // Works on Chrome, Edge, Brave, Opera, Vivaldi, Arc (any Chromium >= 109).
-importScripts('safesearch.js', 'adblock.js', 'updatecheck.js'); // SafeSearch rules, ad blocker rules, update notifier
+importScripts('safesearch.js', 'updatecheck.js'); // SafeSearch rules + update notifier
 
 let creating = null;
 

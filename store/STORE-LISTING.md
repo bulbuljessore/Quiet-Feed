@@ -23,7 +23,6 @@ What it does
 • "Only show" mode on YouTube: choose the channels you want and hide everything else.
 • Related content control: optionally hide videos that mention a blocked channel in the title, or keep or hide the "Related" sidebar in only-show mode.
 • Blur mode: blur all images and videos (on every site or only the sites you pick) and click a picture to reveal it.
-• Optional light ad blocker: known ad/tracker domains, empty ad slots, Sponsored posts on social networks.
 • Optional adult-content filter: adult words, adult websites and SafeSearch.
 • One-click add from the current YouTube video or channel page.
 • Works with Bengali and English text.
@@ -70,7 +69,7 @@ Hide web page content (text, images, YouTube videos and comments) that matches n
 **Permission justifications**
 - `storage`: Saves the user's keyword list, YouTube channel lists and on/off settings.
 - `offscreen`: Runs the on-device OCR engine (a Web Worker) that reads text inside images so matching images can be hidden. No data leaves the device.
-- `declarativeNetRequest`: Blocks requests to known ad and tracking domains (bundled list) when the user turns on the ad blocker, and turns on SafeSearch for Google, Bing and DuckDuckGo searches when the user enables the adult-content filter (adds a safe-search parameter to the search URL).
+- `declarativeNetRequest`: Turns on SafeSearch for Google, Bing and DuckDuckGo searches when the user enables the adult-content filter (adds a safe-search parameter to the search URL).
 - `alarms`: Schedules the optional update check (about every 12 hours).
 - Host permissions (`http://*/*`, `https://*/*`): The filter must run on any website or blog the user visits, and the extension must read image bytes from any site to run OCR. Content is processed locally.
 
