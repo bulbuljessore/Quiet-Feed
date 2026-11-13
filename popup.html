@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <title>Quiet Feed</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <h1>Quiet Feed</h1>
+    <label class="switch" title="সব ফিল্টার চালু / বন্ধ">
+      <input type="checkbox" id="enabled">
+      <span class="slider"></span>
+    </label>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tab-kw" aria-selected="true" aria-controls="panel-kw">কীওয়ার্ড</button>
+    <button role="tab" id="tab-yt" aria-selected="false" aria-controls="panel-yt">YouTube</button>
+  </nav>
+
+  <!-- Keywords -->
+  <section id="panel-kw" role="tabpanel">
+    <form id="kw-form" class="add-form" autocomplete="off">
+      <input type="text" id="kw-input" placeholder="নাম বা শব্দ লিখুন..." maxlength="100" required>
+      <button type="submit">যোগ করুন</button>
+    </form>
+    <ul id="kw-list"></ul>
+    <p id="kw-empty" class="empty" hidden>কোনো কীওয়ার্ড নেই।</p>
+    <p class="hint">পোস্ট, কমেন্ট, লেখা আর ছবির ভেতরের লেখায় এগুলো মিললে লুকানো হয়।</p>
+
+    <h2>ছবি ঝাপসা (Blur)</h2>
+    <label class="check"><input type="checkbox" id="blurAll"> সব সাইটে সব ছবি ও ভিডিও ঝাপসা রাখো</label>
+    <button type="button" id="blur-site" class="wide" disabled>এই সাইটে ঝাপসা করো</button>
+    <ul id="blur-list"></ul>
+    <p class="hint">ঝাপসা ছবিতে ক্লিক করলে সেটা দেখা যাবে।</p>
+  </section>
+
+  <!-- YouTube -->
+  <section id="panel-yt" role="tabpanel" hidden>
+    <fieldset class="modes">
+      <legend>YouTube মোড</legend>
+      <label><input type="radio" name="mode" value="off"> বন্ধ</label>
+      <label><input type="radio" name="mode" value="block"> এই চ্যানেলগুলো ব্লক করো</label>
+      <label><input type="radio" name="mode" value="only"> শুধু এই চ্যানেলগুলো দেখাও</label>
+    </fieldset>
+
+    <div id="yt-block-box">
+      <h2>ব্লক করা চ্যানেল</h2>
+      <form id="blocked-form" class="add-form" autocomplete="off">
+        <input type="text" id="blocked-input" placeholder="@handle, চ্যানেলের নাম বা লিংক" maxlength="200" required>
+        <button type="submit">ব্লক</button>
+      </form>
+      <ul id="blocked-list"></ul>
+      <p id="blocked-empty" class="empty" hidden>কোনো চ্যানেল ব্লক করা নেই।</p>
+      <label class="check"><input type="checkbox" id="relatedByName">
+        যেসব ভিডিওর শিরোনামে ব্লক করা চ্যানেলের নাম আছে, সেগুলোও লুকাও</label>
+    </div>
+
+    <div id="yt-only-box">
+      <h2>অনুমোদিত চ্যানেল</h2>
+      <form id="allowed-form" class="add-form" autocomplete="off">
+        <input type="text" id="allowed-input" placeholder="@handle, চ্যানেলের নাম বা লিংক" maxlength="200" required>
+        <button type="submit">যোগ</button>
+      </form>
+      <ul id="allowed-list"></ul>
+      <p id="allowed-empty" class="empty warn" hidden>তালিকা খালি, তাই এখনো কিছু লুকানো হচ্ছে না।</p>
+      <label class="check"><input type="checkbox" id="showRelatedInOnly">
+        ভিডিও দেখার পেজে "Related" ভিডিও দেখাও</label>
+    </div>
+
+    <div class="current">
+      <span id="current-label">বর্তমান YouTube পেজের চ্যানেল:</span>
+      <div class="current-actions">
+        <button type="button" id="cur-block" disabled>ব্লকে যোগ</button>
+        <button type="button" id="cur-allow" disabled>অনুমোদিতে যোগ</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span id="count"></span>
+    <span class="hint">পরিবর্তন সাথে সাথে সব ট্যাবে কাজ করে।</span>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>
